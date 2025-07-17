@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tình yêu 3D</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      height: 100%;
+      font-family: 'Arial', sans-serif;
+    }
+
+    .scene {
+      width: 100vw;
+      height: 100vh;
+      perspective: 1000px;
+      perspective-origin: 50% 50%;
+    }
+
+    .world {
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.1s linear;
+    }
+
+    .rain-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .phrase, .letter {
+      position: absolute;
+      top: -100px;
+      font-weight: bold;
+      white-space: nowrap;
+      transform: rotateX(20deg) rotateY(10deg);
+      animation: fall linear;
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    .phrase {
+      font-size: 36px;
+    }
+
+    .letter {
+      font-size: 28px;
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotateX(360deg) rotateY(360deg) scale(1.2);
+        filter: brightness(1.8);
+        opacity: 0;
+      }
+    }
+
+    /* 🌌 Hiệu ứng sao nền */
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.8;
+      animation: twinkle 2s infinite ease-in-out alternate;
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.2; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 🌌 Nền sao -->
+<canvas class="stars" id="stars"></canvas>
+
+<!-- 🔊 Nhạc nền -->
+<audio id="bgm" autoplay loop>
+  <source src="/video.mp3" type="audio/mpeg">
+  Trình duyệt của bạn không hỗ trợ nhạc.
+</audio>
+
+<!-- Cảnh 3D -->
+<div class="scene">
+  <div class="world" id="world">
+    <div class="rain-container" id="rain"></div>
+  </div>
+</div>
+
+<script>
+  const rainContainer = document.getElementById('rain');
+  const world = document.getElementById('world');
+
+  const phrases = [
+    'I Love You', 'Iu Em Lắm', 'Em Iu Tôi Không',
+    'Yêu em vcl 💋', 'Tôi mãi yêu em 💖',
+    '💌 Anh nhớ em', '🌹 Em là duy nhất',
+    '😘 Hôn em nè', '🎵 Bên em mãi mãi'
+  ];
+
+  const colors = [
+    '#ff4d4d', '#ff66cc', '#ffcc00', '#00ffff',
+    '#00ff00', '#ff6600', '#6699ff', '#cc33ff',
+    '#ff1493', '#ffa500'
+  ];
+
+  const letters = 'I Love You'.split('');
+
+  function getRandomItem(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function createFallingPhrase() {
+    for (let i = 0; i < 2; i++) {
+      const el = document.createElement('div');
+      el.classList.add('phrase');
+
+      const phrase = getRandomItem(phrases);
+      const color = getRandomItem(colors);
+
+      el.innerText = phrase;
+      el.style.left = `${Math.random() * 100}vw`;
+      el.style.animationDuration = `${2 + Math.random() * 3}s`;
+      el.style.color = color;
+      el.style.textShadow = `
+        0 0 5px ${color},
+        0 0 10px ${color},
+        0 0 20px ${color},
+        0 0 40px ${color}
+      `;
+
+      rainContainer.appendChild(el);
+
+      setTimeout(() => {
+        rainContainer.removeChild(el);
+      }, 6000);
+    }
+  }
+
+  function createFallingLetter() {
+    for (let i = 0; i < 3; i++) {
+      const letter = document.createElement('div');
+      letter.classList.add('letter');
+
+      const char = getRandomItem(letters);
+      const color = getRandomItem(colors);
+
+      letter.innerText = char;
+      letter.style.left = `${Math.random() * 100}vw`;
+      letter.style.animationDuration = `${1.5 + Math.random() * 2}s`;
+      letter.style.color = color;
+      letter.style.textShadow = `
+        0 0 5px ${color},
+        0 0 10px ${color},
+        0 0 20px ${color}
+      `;
+
+      rainContainer.appendChild(letter);
+
+      setTimeout(() => {
+        rainContainer.removeChild(letter);
+      }, 5000);
+    }
+  }
+
+  setInterval(createFallingPhrase, 200);
+  setInterval(createFallingLetter, 50);
+
+  // 🎯 Điều khiển xoay bằng chuột & cảm ứng
+  let rotateX = 0;
+  let rotateY = 0;
+  let isDragging = false;
+  let lastX, lastY;
+
+  function startDrag(x, y) {
+    isDragging = true;
+    lastX = x;
+    lastY = y;
+  }
+
+  function drag(x, y) {
+    if (!isDragging) return;
+    const dx = x - lastX;
+    const dy = y - lastY;
+    rotateY += dx * 0.3;
+    rotateX -= dy * 0.3;
+    world.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    lastX = x;
+    lastY = y;
+  }
+
+  function stopDrag() {
+    isDragging = false;
+  }
+
+  document.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
+  document.addEventListener('mousemove', e => drag(e.clientX, e.clientY));
+  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchstart', e => startDrag(e.touches[0].clientX, e.touches[0].clientY));
+  document.addEventListener('touchmove', e => drag(e.touches[0].clientX, e.touches[0].clientY));
+  document.addEventListener('touchend', stopDrag);
+
+  // 🌌 Nền sao
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const stars = Array.from({length: 100}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5 + 0.5,
+    o: Math.random() * 0.5 + 0.5
+  }));
+
+  function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, 2 * Math.PI);
+      ctx.fillStyle = `rgba(255, 255, 255, ${s.o})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+
+  drawStars();
+</script>
+
+</body>
+</html>
