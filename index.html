@@ -24,19 +24,27 @@
       pointer-events: none;
     }
 
-    .phrase {
+    .phrase, .emoji-image {
       position: absolute;
-      top: -100px;
+      top: -50px;
+      animation: fall linear forwards;
+    }
+
+    .phrase {
       font-size: clamp(16px, 5vw, 36px);
       font-weight: bold;
-      transform: rotateX(20deg) rotateY(10deg);
-      animation: fall linear;
       white-space: nowrap;
+    }
+
+    .emoji-image {
+      width: 40px;
+      height: 40px;
+      pointer-events: none;
     }
 
     @keyframes fall {
       to {
-        transform: translateY(110vh) rotateX(360deg) rotateY(360deg);
+        transform: translateY(110vh);
         opacity: 0;
       }
     }
@@ -85,7 +93,7 @@
       justify-content: center;
       gap: 60px;
       z-index: 10;
-      background-color: rgba(255, 105, 180, 0.2); /* Nền hồng nhẹ */
+      background-color: rgba(255, 105, 180, 0.2);
       padding: 20px;
       border-radius: 20px;
       backdrop-filter: blur(8px);
@@ -113,8 +121,8 @@
     }
 
     @keyframes explode {
-      0% { transform: scale(2.5) rotate(0deg); opacity: 1; }
-      100% { transform: scale(5) rotate(1080deg); opacity: 0; }
+      0% { transform: scale(2.5); opacity: 1; }
+      100% { transform: scale(5); opacity: 0; }
     }
 
     .love-message {
@@ -154,6 +162,31 @@
       0%, 100% { text-shadow: 0 0 10px #ff3399, 0 0 20px #ff66cc, 0 0 30px #ffccff; }
       50% { text-shadow: 0 0 20px #ff99cc, 0 0 40px #ff66ff, 0 0 60px #ffffff; }
     }
+
+    /* Dòng chữ chạy ngang */
+    .no-message {
+      position: fixed;
+      top: 70%;
+      left: -100%;
+      font-size: 22px;
+      color: #f693e0;
+      font-weight: bold;
+      white-space: nowrap;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .no-message.active {
+      animation: slideAcross 5s linear forwards;
+    }
+
+    @keyframes slideAcross {
+      0% { left: 100%; opacity: 0; }
+      10% { opacity: 1; }
+      50% { left: 50%; transform: translateX(-50%); opacity: 1; }
+      100% { left: -120%; opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -163,7 +196,6 @@
 
 <audio id="bgmusic" preload="auto" loop>
   <source src="video.mp3" type="audio/mpeg">
-  Trình duyệt của bạn không hỗ trợ nhạc nền.
 </audio>
 
 <div class="question">Em có yêu anh không? 💖</div>
@@ -173,6 +205,7 @@
 </div>
 
 <div id="love-message" class="love-message">Anh cũng yêu em nhiều lắm 💖</div>
+<div id="no-message" class="no-message">Công chúa chắc là không yêu tôi rồi 😢</div>
 
 <script>
   const container = document.getElementById('rain');
@@ -182,21 +215,29 @@
   const question = document.querySelector('.question');
   const buttons = document.querySelector('.buttons');
   const loveMessage = document.getElementById('love-message');
+  const noMessage = document.getElementById('no-message');
 
   const phrases = [
-    'I Love You 💖', 'Yêu em vcl 💋', 'Iu Linh 💗', 'Iu Bbi 💞',
-    'Tôi mãi yêu em 💖', '💌 Anh nhớ em', '🌹 Em là duy nhất',
+    'I Love You 💖', 'Yêu em vcl 💋', 'Iu Linh 💗', 'Iu Bbi 💞', 'Mãi Mãi Iu Em', 'Toi Iu Em', 'Iu Khanh Linh', 'Love You To The Moon And Back', 'I wait for the day you love me', 'Love me just once',
+    'Tôi mãi yêu em 💖', '💌 Anh nhớ em', '🌹 Em là duy nhất', 'Chỉ Yêu Mình Em', 'Iu Công Chúa', 'Em Là Đẹp Nhất', 'Love You To The Moon And Back', 'Love You To The Moon And Back',
     '😘 Hôn em nè', '🎵 Bên em mãi mãi', '❤️', '💘', '💝', '💕', '💗', '💓', '💞'
   ];
 
   const colors = [
     '#ff4d4d', '#ff66cc', '#ffcc00', '#00ffff',
     '#00ff00', '#ff6600', '#6699ff', '#cc33ff',
-    '#ff1493', '#ffa500'
+    '#ff1493', '#ffa500', '#00fa9a', '#7b68ee',
+    '#f08080', '#ffd700', '#1e90ff', '#adff2f',
+    '#ff69b4', '#ff7f50', '#da70d6', '#40e0d0',
+    '#ff6347', '#8a2be2', '#00ced1', '#e9967a',
+    '#ffb6c1', '#ffdab9', '#98fb98', '#ba55d3',
+    '#87cefa', '#ff00ff', '#dc143c', '#66cdaa',
+    '#f5deb3', '#ffdead', '#e0ffff'
   ];
 
   let scaleLevel = 1;
   let rainingStarted = false;
+  let firstNoClick = true;
 
   function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -206,13 +247,36 @@
     const el = document.createElement('div');
     el.classList.add('phrase');
     el.innerText = getRandomItem(phrases);
-    el.style.left = `${5 + Math.random() * 90}vw`;
+
+    const vw = window.innerWidth;
+    const spacing = 60;
+    const columns = Math.floor(vw / spacing);
+    const column = Math.floor(Math.random() * columns);
+    el.style.left = `${column * spacing}px`;
+
     const color = getRandomItem(colors);
     el.style.color = color;
     el.style.animationDuration = `${2 + Math.random() * 3}s`;
     el.style.textShadow = `0 0 5px ${color}, 0 0 10px ${color}, 0 0 20px ${color}, 0 0 40px ${color}`;
     container.appendChild(el);
     setTimeout(() => el.remove(), 6000);
+  }
+
+  function createFallingEmoji() {
+    const emojiImages = ['anh11.png', 'anh12.gif', 'anh13.png', 'anh14.gif', 'anh15.gif', 'anh16.png', 'anh17.png', 'anh18.png', 'anh19.png'];
+    const img = document.createElement('img');
+    img.src = getRandomItem(emojiImages);
+    img.classList.add('emoji-image');
+
+    const vw = window.innerWidth;
+    const spacing = 50;
+    const columns = Math.floor(vw / spacing);
+    const column = Math.floor(Math.random() * columns);
+    img.style.left = `${column * spacing}px`;
+    img.style.animationDuration = `${3 + Math.random() * 3}s`;
+
+    container.appendChild(img);
+    setTimeout(() => img.remove(), 7000);
   }
 
   function startLoveEffect() {
@@ -229,7 +293,12 @@
     }, 5000);
 
     if (!rainingStarted) {
-      setInterval(createFallingPhrase, 200);
+      let count = 0;
+      setInterval(() => {
+        createFallingPhrase();
+        if (count % 4 === 0) createFallingEmoji();
+        count++;
+      }, 200);
       rainingStarted = true;
     }
   }
@@ -237,6 +306,13 @@
   yesBtn.addEventListener('click', startLoveEffect);
 
   noBtn.addEventListener('click', () => {
+    if (firstNoClick) {
+      noMessage.classList.remove('active');
+      void noMessage.offsetWidth; // Trigger reflow to restart animation
+      noMessage.classList.add('active');
+      firstNoClick = false;
+    }
+
     scaleLevel += 0.2;
     yesBtn.style.transform = `scale(${scaleLevel})`;
     if (scaleLevel >= 2.5) {
