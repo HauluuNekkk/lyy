@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Em có yêu anh không?</title>
   <style>
     html, body {
@@ -57,7 +57,7 @@
 
     .question {
       position: fixed;
-      top: 35%;
+      top: 30%;
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
@@ -83,8 +83,12 @@
       transform: translate(-50%, -50%);
       display: flex;
       justify-content: center;
-      gap: 40px;
+      gap: 60px;
       z-index: 10;
+      background-color: rgba(255, 105, 180, 0.2); /* Nền hồng nhẹ */
+      padding: 20px;
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
     }
 
     .btn {
@@ -96,21 +100,59 @@
       background-color: #fff;
       color: #000;
       transition: all 0.3s ease;
+      box-shadow: 0 0 10px #ff99cc;
+    }
+
+    .btn:hover {
+      background-color: #ffccff;
+      color: #000;
     }
 
     .explode {
-      animation: explode 0.5s ease forwards;
+      animation: explode 0.6s ease forwards;
     }
 
     @keyframes explode {
-      0% {
-        transform: scale(2.5) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(3.5) rotate(720deg);
-        opacity: 0;
-      }
+      0% { transform: scale(2.5) rotate(0deg); opacity: 1; }
+      100% { transform: scale(5) rotate(1080deg); opacity: 0; }
+    }
+
+    .love-message {
+      position: fixed;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      z-index: 999;
+      display: none;
+      opacity: 0;
+    }
+
+    .love-message.show {
+      display: block;
+      animation: fadeIn 2s ease-in-out forwards, glow 3s ease-in-out infinite;
+    }
+
+    .love-message.fadeout {
+      animation: fadeOut 3s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -60%) scale(0.8); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -55%) scale(1.1); }
+    }
+
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 10px #ff3399, 0 0 20px #ff66cc, 0 0 30px #ffccff; }
+      50% { text-shadow: 0 0 20px #ff99cc, 0 0 40px #ff66ff, 0 0 60px #ffffff; }
     }
   </style>
 </head>
@@ -119,7 +161,6 @@
 <div class="stars"></div>
 <div class="rain-container" id="rain"></div>
 
-<!-- Nhạc nền -->
 <audio id="bgmusic" preload="auto" loop>
   <source src="video.mp3" type="audio/mpeg">
   Trình duyệt của bạn không hỗ trợ nhạc nền.
@@ -131,6 +172,8 @@
   <button class="btn no-btn" id="no-btn">Không 😢</button>
 </div>
 
+<div id="love-message" class="love-message">Anh cũng yêu em nhiều lắm 💖</div>
+
 <script>
   const container = document.getElementById('rain');
   const audio = document.getElementById('bgmusic');
@@ -138,9 +181,10 @@
   const noBtn = document.getElementById('no-btn');
   const question = document.querySelector('.question');
   const buttons = document.querySelector('.buttons');
+  const loveMessage = document.getElementById('love-message');
 
   const phrases = [
-    'I Love You 💖', 'Yêu em vcl 💋', 'Iu Linh 💗', 'Iu bbi 💞',
+    'I Love You 💖', 'Yêu em vcl 💋', 'Iu Linh 💗', 'Iu Bbi 💞',
     'Tôi mãi yêu em 💖', '💌 Anh nhớ em', '🌹 Em là duy nhất',
     '😘 Hôn em nè', '🎵 Bên em mãi mãi', '❤️', '💘', '💝', '💕', '💗', '💓', '💞'
   ];
@@ -152,6 +196,7 @@
   ];
 
   let scaleLevel = 1;
+  let rainingStarted = false;
 
   function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -165,11 +210,7 @@
     const color = getRandomItem(colors);
     el.style.color = color;
     el.style.animationDuration = `${2 + Math.random() * 3}s`;
-    el.style.textShadow = `
-      0 0 5px ${color},
-      0 0 10px ${color},
-      0 0 20px ${color},
-      0 0 40px ${color}`;
+    el.style.textShadow = `0 0 5px ${color}, 0 0 10px ${color}, 0 0 20px ${color}, 0 0 40px ${color}`;
     container.appendChild(el);
     setTimeout(() => el.remove(), 6000);
   }
@@ -178,7 +219,19 @@
     audio.play().catch(() => {});
     question.style.display = 'none';
     buttons.style.display = 'none';
-    setInterval(createFallingPhrase, 200);
+
+    loveMessage.classList.remove('fadeout');
+    loveMessage.classList.add('show');
+
+    setTimeout(() => {
+      loveMessage.classList.remove('show');
+      loveMessage.classList.add('fadeout');
+    }, 5000);
+
+    if (!rainingStarted) {
+      setInterval(createFallingPhrase, 200);
+      rainingStarted = true;
+    }
   }
 
   yesBtn.addEventListener('click', startLoveEffect);
@@ -186,10 +239,9 @@
   noBtn.addEventListener('click', () => {
     scaleLevel += 0.2;
     yesBtn.style.transform = `scale(${scaleLevel})`;
-
     if (scaleLevel >= 2.5) {
       yesBtn.classList.add('explode');
-      setTimeout(startLoveEffect, 600);
+      setTimeout(startLoveEffect, 700);
     }
   });
 </script>
